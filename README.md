@@ -114,7 +114,7 @@ npm install --legacy-peer-deps
 npm run build
 ```
 
-# copier manuellement (moins souple)
+# copier manuellement
 ```bash
 cp -r ~/meshtastic-protobuf-sync/node-red-contrib-meshtastic-valentin/* ~/.node-red/node_modules/@meshtastic/node-red-contrib-meshtastic/
 ```
