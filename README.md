@@ -28,3 +28,155 @@ npm install
 npm run build
 ```
 
+pour être autonome 
+🧰 Pré-requis : ce qu’on installe
+Sur ta Orange Pi :
+sudo apt update
+sudo apt install -y git curl build-essential protobuf-compiler
+
+# Installer Node.js
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Installer générateurs TypeScript et buf
+sudo npm install -g protoc-gen-ts
+sudo npm install -g @bufbuild/buf
+
+🗂️ Arborescence de travail proposée
+~/meshtastic-protobuf-sync/
+│
+├── protobufs/                  ← clone officiel Meshtastic
+├── google-protobuf-src/       ← sources de Google pour descriptor.proto
+└── node-red-contrib-meshtastic-valentin/   ← clone de la palette de Valentin
+
+📥 Étape 1 : Cloner les dépôts nécessaires
+mkdir -p ~/meshtastic-protobuf-sync
+cd ~/meshtastic-protobuf-sync
+
+# Clone des protobufs Meshtastic officiels
+git clone https://github.com/meshtastic/protobufs.git
+
+# Clone de la palette de Valentin
+git clone https://github.com/valentintintin/node-red-contrib-meshtastic.git node-red-contrib-meshtastic-valentin
+
+# Clone des proto Google pour descriptor.proto
+git clone https://github.com/protocolbuffers/protobuf.git google-protobuf-src
+cd google-protobuf-src
+git checkout v21.12
+cd ..
+
+🛠️ Étape 2 : Compiler les .proto en .ts
+# Créer le dossier de sortie
+mkdir -p protobufs/generated/ts
+
+# Lancer protoc avec les bons chemins
+cd node-red-contrib-meshtastic-valentin
+
+protoc \
+  --plugin=protoc-gen-ts=$(which protoc-gen-ts) \
+  --ts_out ../protobufs/generated/ts \
+  -I ../protobufs \
+  -I ../protobufs/meshtastic \
+  -I ../google-protobuf-src/src \
+  ../protobufs/meshtastic/*.proto
+
+📁 Étape 3 : Copier les fichiers générés dans la palette
+# Nettoyer puis copier
+rm -rf src/protos
+mkdir -p src/protos
+cp -r ../protobufs/generated/ts/* src/protos/
+
+🏗️ Étape 4 : Installer et construire la palette
+Dans node-red-contrib-meshtastic-valentin :
+npm install --legacy-peer-deps
+npm run build
+
+Option 2 : copier manuellement (moins souple)
+cp -r ~/meshtastic-protobuf-sync/node-red-contrib-meshtastic-valentin/* ~/.node-red/node_modules/@meshtastic/node-red-contrib-meshtastic/
+
+
+
+
+
+
+
+
+
+✅ Script update-meshtastic.sh
+Crée un fichier dans ~/meshtastic-protobuf-sync/ :
+nano ~/meshtastic-protobuf-sync/update-meshtastic.sh
+Et colle ceci :
+#!/bin/bash
+
+# === CONFIGURATION ===
+MESHTASTIC_REPO="https://github.com/meshtastic/protobufs.git"
+MESHTASTIC_NODE_RED_DIR="$HOME/.node-red/node_modules/@meshtastic/node-red-contrib-meshtastic"
+SYNC_DIR="$HOME/meshtastic-protobuf-sync"
+PROTOBUF_DIR="$SYNC_DIR/protobufs"
+GOOGLE_PROTOBUF_DIR="$SYNC_DIR/google-protobuf-src/src"
+NODE_RED_MESHTASTIC="$SYNC_DIR/node-red-contrib-meshtastic-valentin"
+
+# === 1. Préparer les dossiers ===
+mkdir -p "$PROTOBUF_DIR/generated/ts"
+
+cd "$SYNC_DIR"
+
+# === 2. Mettre à jour les protobufs ===
+if [ -d "$PROTOBUF_DIR/.git" ]; then
+    echo "🔄 Mise à jour du dépôt protobufs..."
+    cd "$PROTOBUF_DIR" && git pull origin master && cd ..
+else
+    echo "📥 Clonage du dépôt protobufs..."
+    git clone "$MESHTASTIC_REPO" "$PROTOBUF_DIR"
+fi
+
+# === 3. Compiler les fichiers proto ===
+echo "⚙️ Compilation des fichiers protobufs..."
+
+cd "$NODE_RED_MESHTASTIC"
+
+protoc \
+  --plugin=protoc-gen-ts=$(which protoc-gen-ts) \
+  --ts_out "$PROTOBUF_DIR/generated/ts" \
+  -I "$PROTOBUF_DIR" \
+  -I "$PROTOBUF_DIR/meshtastic" \
+  -I "$GOOGLE_PROTOBUF_DIR" \
+  "$PROTOBUF_DIR/meshtastic/"*.proto
+
+if [ $? -ne 0 ]; then
+    echo "❌ Échec de la compilation des protobufs."
+    exit 1
+fi
+
+# === 4. Copier les fichiers compilés dans src/protos ===
+echo "📦 Copie des fichiers compilés dans src/protos..."
+rm -rf "$NODE_RED_MESHTASTIC/src/protos"
+mkdir -p "$NODE_RED_MESHTASTIC/src/protos"
+cp -r "$PROTOBUF_DIR/generated/ts"/* "$NODE_RED_MESHTASTIC/src/protos/"
+
+# === 5. Construire le module ===
+echo "🔧 Construction du module Node-RED..."
+cd "$NODE_RED_MESHTASTIC"
+npm install --legacy-peer-deps
+npm run build
+
+# === 6. Copier les fichiers vers Node-RED ===
+echo "📝 Mise à jour de la palette Node-RED..."
+cp -r "$NODE_RED_MESHTASTIC/"* "$MESHTASTIC_NODE_RED_DIR/"
+
+# === 7. Fin ===
+echo "✅ Mise à jour terminée. Redémarre Node-RED pour appliquer les changements."
+
+🛠️ Donne les permissions :
+chmod +x ~/meshtastic-protobuf-sync/update-meshtastic.sh
+
+▶️ Exécution :
+~/meshtastic-protobuf-sync/update-meshtastic.sh
+
+🔁 Puis redémarre Node-RED :
+node-red-stop
+node-red-start
+Souhaite-tu que ce script ajoute aussi un git pull sur le dépôt de la palette si tu la modifies depuis GitHub ?
+
+
+
