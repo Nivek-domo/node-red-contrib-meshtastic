@@ -29,18 +29,27 @@ npm run build
 ```
 
 pour être autonome 
+
 🧰 Pré-requis : ce qu’on installe
-Sur ta Orange Pi :
+Sur ton RPi :
+
+```bash
 sudo apt update
 sudo apt install -y git curl build-essential protobuf-compiler
 
+```
+
 # Installer Node.js
+```bash
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
+```
 
 # Installer générateurs TypeScript et buf
+```bash
 sudo npm install -g protoc-gen-ts
 sudo npm install -g @bufbuild/buf
+```
 
 🗂️ Arborescence de travail proposée
 ~/meshtastic-protobuf-sync/
