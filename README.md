@@ -31,6 +31,10 @@ npm run build
 
 
 
+
+
+
+
 ## pour être autonome 
 
 # 🧰 Pré-requis : ce qu’on installe
@@ -122,9 +126,10 @@ cp -r ~/meshtastic-protobuf-sync/node-red-contrib-meshtastic-valentin/* ~/.node-
 
 
 
+---------------------------------------------------------------------------------
+# pour mettre à jour par la suite en 2 commandes
 
-
-
+---------------------------------------------------------------------------------
 
 
 ## ✅ Script update-meshtastic.sh
